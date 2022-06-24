@@ -1,0 +1,35 @@
+# Check our guides at https://confluence.atlassian.com/x/e8YWN for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: lorisleiva/laravel-docker
+
+pipelines:
+  branches:
+    development:
+      - step:
+          caches:
+            - composer
+          script:
+            - apt-get update && apt-get install -y git curl libmcrypt-dev default-mysql-client
+            - docker-php-ext-install pdo_mysql
+            - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+            - composer install
+            - composer require --dev laracasts/flash --update-with-dependencies
+            - composer require --dev phpunit/phpunit --update-with-dependencies
+            - ln -f -s .env.pipelines .env
+            - php artisan migrate
+            - php artisan serve &
+            - ./vendor/bin/phpunit
+
+      - step:
+          name: Deploy to prod
+          deployment: production
+          # trigger: manual  # Uncomment to make this a manual deployment.
+          script:
+            - pipe: atlassian/ftp-deploy:0.3.2
+              variables:
+                USER: $FTP_USERNAME
+                PASSWORD: $FTP_PASSWORD
+                SERVER: $FTP_HOST
+                REMOTE_PATH: /var/www/html
