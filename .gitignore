@@ -8,7 +8,7 @@
 /.idea
 Homestead.json
 Homestead.yaml
-#.env
+.env
 deploy.php
 deploy-log.txt
 
